@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leave Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1B2B29;
+    --ink-soft:#57655B;
+    --paper:#EDEFE9;
+    --surface:#FFFFFF;
+    --line:#D7DBD1;
+    --amber:#B8863B;
+    --forest:#3F6B4F;
+    --brick:#9C4B3D;
+    --focus:#3F6B4F;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:#E7EAE3; --ink-soft:#9FAEA4; --paper:#121815; --surface:#1B2420;
+      --line:#2C362F; --amber:#D3A25E; --forest:#6FAE85; --brick:#C97561; --focus:#6FAE85;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink:#E7EAE3; --ink-soft:#9FAEA4; --paper:#121815; --surface:#1B2420;
+    --line:#2C362F; --amber:#D3A25E; --forest:#6FAE85; --brick:#C97561; --focus:#6FAE85;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased; line-height: 1.5;
+  }
+  .page { max-width: 880px; margin: 0 auto; padding: 0 20px 40px; }
+
+  .masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-top: 36px; }
+  .wordmark { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: clamp(26px, 5vw, 36px); margin: 0; }
+  .tagline { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; max-width: 34ch; }
+  .employee { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--forest); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; flex-shrink: 0; }
+  .employee-info .name { font-weight: 600; font-size: 14px; }
+  .employee-info .role { color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+
+  .flash { margin-top: 20px; padding: 12px 16px; border-radius: 4px; font-size: 14px; border: 1px solid; }
+  .flash.success { background: rgba(63,107,79,.12); color: var(--forest); border-color: var(--forest); }
+  .flash.error { background: rgba(156,75,61,.12); color: var(--brick); border-color: var(--brick); }
+
+  .tab-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .tabbar { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin: 28px 0 0; overflow-x: auto; }
+  .tabbar label { padding: 10px 2px 12px; cursor: pointer; color: var(--ink-soft); border-bottom: 2px solid transparent; font-size: 15px; user-select: none; white-space: nowrap; }
+  .tab-input#tab-overview:checked ~ .tabbar label[for="tab-overview"],
+  .tab-input#tab-apply:checked ~ .tabbar label[for="tab-apply"],
+  .tab-input#tab-history:checked ~ .tabbar label[for="tab-history"] {
+    color: var(--ink); border-bottom-color: var(--forest); font-weight: 600;
+  }
+  .tab-input#tab-overview:focus-visible ~ .tabbar label[for="tab-overview"],
+  .tab-input#tab-apply:focus-visible ~ .tabbar label[for="tab-apply"],
+  .tab-input#tab-history:focus-visible ~ .tabbar label[for="tab-history"] {
+    outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px;
+  }
+  .panel { display: none; padding: 28px 0 12px; }
+  .tab-input#tab-overview:checked ~ .panels #panel-overview,
+  .tab-input#tab-apply:checked ~ .panels #panel-apply,
+  .tab-input#tab-history:checked ~ .panels #panel-history {
+    display: block;
+  }
+  .panel h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 22px; margin: 0 0 8px; }
+  .lede { color: var(--ink-soft); font-size: 14px; margin: 0 0 4px; max-width: 50ch; }
+
+  .balances { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 24px; }
+  .balance-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; }
+  .balance-card .label { font-size: 13px; color: var(--ink-soft); margin: 0 0 10px; }
+  .balance-card .figure { font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 600; margin: 0; }
+  .balance-card .figure small { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
+  .track { height: 6px; background: var(--line); border-radius: 3px; margin-top: 14px; overflow: hidden; }
+  .fill { height: 100%; background: var(--forest); }
+
+  .notice { margin-top: 28px; border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 4px; padding: 16px 18px; background: var(--surface); display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .notice p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .notice p strong { color: var(--ink); }
+  .notice.empty { border-left-color: var(--line); }
+
+  .stamp { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em; padding: 4px 10px; border: 1.5px dashed; border-radius: 3px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.approved { color: var(--forest); border-color: var(--forest); }
+  .stamp.pending { color: var(--amber); border-color: var(--amber); }
+  .stamp.rejected { color: var(--brick); border-color: var(--brick); }
+
+  form { margin-top: 24px; max-width: 480px; }
+  .field { margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; color: var(--ink-soft); }
+  .field select, .field input, .field textarea {
+    font-family: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px;
+  }
+  .field select:focus-visible, .field input:focus-visible, .field textarea:focus-visible {
+    outline: 2px solid var(--focus); outline-offset: 1px;
+  }
+  .field textarea { min-height: 90px; resize: vertical; font-family: inherit; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .btn-primary {
+    background: var(--forest); color: #fff; border: none; border-radius: 4px;
+    padding: 12px 22px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary:hover { opacity: .92; }
+  .btn-primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  .table-scroll { overflow-x: auto; margin-top: 20px; }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+  .history-table th { text-align: left; font-weight: 600; color: var(--ink-soft); font-size: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .history-table td { padding: 12px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .history-table tbody tr:nth-child(even) { background: var(--surface); }
+  .empty-row td { color: var(--ink-soft); font-style: italic; }
+
+  .foot { margin-top: 44px; padding: 20px 0 8px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 13px; }
+
+  @media (max-width: 560px) {
+    .masthead { flex-direction: column; }
+    .row-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div>
+      <p class="wordmark">Leave Manager</p>
+      <p class="tagline">Track balances, request time off, and follow approvals in one place.</p>
+    </div>
+    <div class="employee">
+      <div class="avatar" aria-hidden="true" th:text="${initials}">MG</div>
+      <div class="employee-info">
+        <div class="name" th:text="${employee.name}">Employee name</div>
+        <div class="role" th:text="${employee.department}">Department</div>
+      </div>
+    </div>
+  </header>
+
+  <div th:if="${successMessage}" class="flash success" th:text="${successMessage}">Success</div>
+  <div th:if="${errorMessage}" class="flash error" th:text="${errorMessage}">Error</div>
+
+  <input type="radio" name="tabs" id="tab-overview" class="tab-input" th:checked="${tab == 'overview'}">
+  <input type="radio" name="tabs" id="tab-apply" class="tab-input" th:checked="${tab == 'apply'}">
+  <input type="radio" name="tabs" id="tab-history" class="tab-input" th:checked="${tab == 'history'}">
+
+  <nav class="tabbar">
+    <label for="tab-overview">Overview</label>
+    <label for="tab-apply">Apply for leave</label>
+    <label for="tab-history">History</label>
+  </nav>
+
+  <main class="panels">
+
+    <section class="panel" id="panel-overview">
+      <h2>Your leave at a glance</h2>
+      <p class="lede" th:if="${pendingLeave != null}">One request is waiting on approval. See below for details.</p>
+      <p class="lede" th:if="${pendingLeave == null}">You have no pending requests right now.</p>
+
+      <div class="balances">
+        <div class="balance-card" th:each="balance : ${balances}">
+          <p class="label" th:text="${balance.type} + ' leave'">Type leave</p>
+          <p class="figure">
+            <span th:text="${balance.remainingDays}">0</span>
+            <small th:text="'of ' + ${balance.totalDays} + ' days left'">of 0 days left</small>
+          </p>
+          <div class="track"><div class="fill" th:style="'width:' + ${balance.percentRemaining} + '%'"></div></div>
+        </div>
+      </div>
+
+      <div class="notice" th:if="${pendingLeave != null}">
+        <span class="stamp pending">Pending</span>
+        <p>
+          <strong th:text="${pendingLeave.leaveType} + ' leave, ' + ${#temporals.format(pendingLeave.startDate,'MMM d, yyyy')} + ' \u2013 ' + ${#temporals.format(pendingLeave.endDate,'MMM d, yyyy')}">Leave dates</strong>
+          is waiting on your manager's approval.
+        </p>
+      </div>
+      <div class="notice empty" th:if="${pendingLeave == null}">
+        <p>Nothing is waiting on approval at the moment.</p>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-apply">
+      <h2>Apply for leave</h2>
+      <p class="lede">Fill in the details below and send it for approval.</p>
+      <form th:action="@{/leave/apply}" th:object="${leaveRequest}" method="post">
+        <input type="hidden" th:field="*{employeeId}">
+        <div class="field">
+          <label for="leave-type">Leave type</label>
+          <select id="leave-type" th:field="*{leaveType}">
+            <option value="Casual">Casual leave</option>
+            <option value="Sick">Sick leave</option>
+            <option value="Earned">Earned leave</option>
+          </select>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="from-date">From</label>
+            <input type="date" id="from-date" th:field="*{startDate}">
+          </div>
+          <div class="field">
+            <label for="to-date">To</label>
+            <input type="date" id="to-date" th:field="*{endDate}">
+          </div>
+        </div>
+        <div class="field">
+          <label for="reason">Reason</label>
+          <textarea id="reason" th:field="*{reason}" placeholder="Add a short note for your manager"></textarea>
+        </div>
+        <button type="submit" class="btn-primary">Submit request</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-history">
+      <h2>Leave history</h2>
+      <p class="lede">Every request you've made, and where it stands.</p>
+      <div class="table-scroll">
+        <table class="history-table">
+          <thead>
+            <tr><th>Dates</th><th>Type</th><th>Days</th><th>Status</th><th>Reason</th></tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(history)}" class="empty-row">
+              <td colspan="5">No leave requests yet.</td>
+            </tr>
+            <tr th:each="leave : ${history}">
+              <td>
+                <span th:if="${leave.startDate.isEqual(leave.endDate)}"
+                      th:text="${#temporals.format(leave.startDate,'MMM d, yyyy')}">Date</span>
+                <span th:unless="${leave.startDate.isEqual(leave.endDate)}"
+                      th:text="${#temporals.format(leave.startDate,'MMM d, yyyy')} + ' \u2013 ' + ${#temporals.format(leave.endDate,'MMM d, yyyy')}">Date range</span>
+              </td>
+              <td th:text="${leave.leaveType} + ' leave'">Type leave</td>
+              <td th:text="${T(java.time.temporal.ChronoUnit).DAYS.between(leave.startDate, leave.endDate) + 1}">1</td>
+              <td><span th:class="'stamp ' + ${#strings.toLowerCase(leave.status)}"
+                        th:text="${#strings.capitalize(#strings.toLowerCase(leave.status))}">Status</span></td>
+              <td th:text="${#strings.isEmpty(leave.reason)} ? '\u2013' : ${#strings.abbreviate(leave.reason, 40)}">Reason</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    Employee Leave Management System. Java, Spring Boot, JDBC and MySQL on the
+    backend, with a Thymeleaf and CSS front-end.
+  </footer>
+
+</div>
+</body>
+</html>
