@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
     handleRuntimeException(
             RuntimeException exception) {
 
-
+        exception.printStackTrace();
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(exception.getMessage());
